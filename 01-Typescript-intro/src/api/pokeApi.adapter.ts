@@ -1,40 +1,38 @@
 import axios from "axios";
 
-// Un adapter que utiliza la función fetch para hacer peticiones HTTP
-export class PokeApiFetchAdapter {
-    /**
-     * Método genérico para realizar peticiones GET usando fetch.
-     * 
-     * Un método genérico es aquel que puede trabajar con diferentes tipos de datos.
-     * Un "genérico" en TypeScript se define usando <T>, donde T es un parámetro de tipo
-     * que se determina cuando se llama al método.
-     * 
-     * @param url - URL a la que se realiza la petición GET
-     * @returns Una promesa que resuelve con el tipo de dato especificado (T)
-     */
-    async get<T>(url: string): Promise<T> {
-        const response = await fetch(url);
-        const data: T = await response.json();
-        return data;
-    }
+/**
+ * HttpAdapter es una interfaz que define un contrato para adaptadores HTTP.
+ * Las interfaces en TypeScript son una forma de definir la estructura que deben seguir las clases,
+ * actuando como un contrato que garantiza que las clases que la implementen tengan ciertos métodos y propiedades.
+ */
+export interface HttpAdapter {
+  get<T>(url: string): Promise<T>;
 }
 
-// Un adapter que utiliza Axios para hacer peticiones HTTP
-export class PokeApiAdapter {
-    // Instancia de Axios para realizar peticiones
-    private readonly axios = axios;
+/**
+ * Implementa la interfaz HttpAdapter usando la API fetch nativa.
+ * La palabra clave 'implements' asegura que esta clase cumpla con el contrato definido en HttpAdapter,
+ * lo que significa que debe implementar todos los métodos definidos en la interfaz.
+ */
+export class PokeApiFetchAdapter implements HttpAdapter {
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url);
+    const data: T = await response.json();
+    return data;
+  }
+}
 
-    /**
-     * Método genérico para realizar peticiones GET usando Axios.
-     * 
-     * Al igual que el anterior, este método es genérico y puede retornar cualquier tipo de dato.
-     * El tipo de dato se especifica al llamar al método.
-     * 
-     * @param url - URL a la que se realiza la petición GET
-     * @returns Una promesa que resuelve con el tipo de dato especificado (T)
-     */
-    async get<T>(url: string): Promise<T> {
-        const { data } = await this.axios.get<T>(url);
-        return data;
-    }
+/**
+ * Implementa la interfaz HttpAdapter usando la librería Axios.
+ * Al implementar la misma interfaz que PokeApiFetchAdapter, esta clase
+ * puede ser usada de manera intercambiable, siguiendo el principio de
+ * sustitución de Liskov (LSP) de SOLID.
+ */
+export class PokeApiAdapter implements HttpAdapter {
+  private readonly axios = axios;
+
+  async get<T>(url: string): Promise<T> {
+    const { data } = await this.axios.get<T>(url);
+    return data;
+  }
 }

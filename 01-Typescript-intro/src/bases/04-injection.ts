@@ -1,68 +1,68 @@
 import type { Move, PokeapiResponse } from "../interfaces/pokeapi-response.interface";
+import type { HttpAdapter } from '../api/pokeApi.adapter';
 import { PokeApiAdapter, PokeApiFetchAdapter } from '../api/pokeApi.adapter';
 
 /**
- * Principios SOLID:
- * 
- * S - Single Responsibility Principle (SRP): 
- * Cada clase debe tener una única responsabilidad, es decir, una sola razón para cambiar.
- * Esto facilita el mantenimiento y la comprensión del código.
- * 
- * O - Open/Closed Principle (OCP): 
- * El código debe estar abierto para extensión, pero cerrado para modificación.
- * Puedes agregar nuevas funcionalidades sin modificar el código existente.
- * 
- * L - Liskov Substitution Principle (LSP): 
- * Las clases derivadas deben poder sustituir a sus clases base sin alterar el comportamiento del programa.
- * Garantiza la correcta herencia y polimorfismo.
- * 
- * I - Interface Segregation Principle (ISP): 
- * Los clientes no deben verse obligados a depender de interfaces que no utilizan.
- * Es mejor tener varias interfaces específicas que una general.
- * 
- * D - Dependency Inversion Principle (DIP): 
- * Los módulos de alto nivel no deben depender de módulos de bajo nivel, ambos deben depender de abstracciones.
- * Facilita la inyección de dependencias y el desacoplamiento.
- * 
- * ¿Para qué sirven?
- * Los principios SOLID ayudan a crear software más mantenible, escalable y flexible.
- * Facilitan la reutilización de código, reducen la complejidad y mejoran la calidad del desarrollo.
+ * Clase que representa un Pokémon
+ * Implementa el patrón de inyección de dependencias para la comunicación HTTP
  */
-
 export class Pokemon {
 
+    /**
+     * Getter que retorna la URL de la imagen del Pokémon
+     * basada en su ID
+     */
     get imageUrl(): string {
-        return `https://pokemon.com/${ this.id }.jpg`;
+        return `https://pokemon.com/${this.id}.jpg`;
     }
-  
+
+    /**
+     * Constructor de la clase Pokemon
+     * @param id - Identificador único del Pokémon
+     * @param name - Nombre del Pokémon
+     * @param http - Adaptador HTTP inyectado para realizar peticiones
+     */
     constructor(
-        public readonly id: number, 
+        public readonly id: number,
         public name: string,
-        // Todo: inyectar dependencias
-        private readonly http: PokeApiAdapter
-    ) {}
+        private readonly http: HttpAdapter
+    ) { }
 
+    /**
+     * Método que simula el grito del Pokémon
+     * Imprime el nombre en mayúsculas
+     */
     scream() {
-        console.log(`${ this.name.toUpperCase() }!!!`);
+        console.log(`${this.name.toUpperCase()}!!!`);
     }
 
+    /**
+     * Método que simula el habla del Pokémon
+     * Imprime el nombre dos veces
+     */
     speak() {
-        console.log(`${ this.name }, ${ this.name }`);
+        console.log(`${this.name}, ${this.name}`);
     }
 
+    /**
+     * Método asíncrono que obtiene los movimientos del Pokémon
+     * utilizando el adaptador HTTP inyectado
+     * @returns Promise con el array de movimientos del Pokémon
+     */
     async getMoves(): Promise<Move[]> {
-        const data = await this.http.get<PokeapiResponse>(`https://pokeapi.co/api/v2/pokemon/${ this.id }`);
-        console.log( data.moves );
-        
+        const data = await this.http.get<PokeapiResponse>(`https://pokeapi.co/api/v2/pokemon/${this.id}`);
+        console.log(data.moves);
+
         return data.moves;
     }
-
 }
 
-// pokeApi es una instancia de PokeApiAdapter
-const pokeApi = new PokeApiAdapter();
-const pokeApiFetch = new PokeApiFetchAdapter();
+// Creamos instancias de los adaptadores HTTP disponibles
+const pokeApi = new PokeApiAdapter(); // Usa Axios
+const pokeApiFetch = new PokeApiFetchAdapter(); // Usa Fetch API
 
-export const charmander = new Pokemon( 4, 'Charmander', pokeApi );
+// Creamos una instancia de Pokemon usando el adaptador con Fetch
+export const charmander = new Pokemon(4, 'Charmander', pokeApiFetch);
 
+// Llamamos al método para obtener los movimientos
 charmander.getMoves();
