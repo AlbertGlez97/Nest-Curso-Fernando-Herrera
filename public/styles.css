@@ -1,0 +1,11 @@
+html, body {
+    padding: 20px;
+}
+
+h1 {
+    color: darkblue;
+}
+
+p {
+    font-size: 18px;
+}
