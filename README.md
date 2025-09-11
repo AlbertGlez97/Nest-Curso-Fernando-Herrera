@@ -72,3 +72,12 @@ Instalar estos paquetes permite que tu aplicación NestJS se conecte a MongoDB, 
 * * joi 
 
 El paquete join de npm es una pequeña utilidad que permite coordinar múltiples operaciones asíncronas en JavaScript, actuando como un contador de callbacks: cada vez que una tarea finaliza se registra su resultado, se pueden recibir notificaciones parciales con notify(), y cuando todas han terminado se ejecuta una función final mediante then(), funcionando de manera similar a lo que hoy se logra con Promise.all o async/await.
+
+# Production Build
+
+1. Crear el archivo ```.env.prod``` y llenarlo con las variables de entorno para produccion
+2. Crear la nueva imagen de docker
+
+```
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod up --build -d
+```

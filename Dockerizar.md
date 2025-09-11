@@ -81,3 +81,6 @@ EXPOSE 3000
 # ["yarn", "start"]: Ejecuta el script "start" definido en package.json
 # Este comando mantiene el contenedor corriendo y la aplicación activa
 CMD [ "yarn","start" ]
+
+
+[Guia de instalacion](https://gist.github.com/Klerith/e7861738c93712840ab3a38674843490)

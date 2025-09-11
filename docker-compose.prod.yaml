@@ -95,5 +95,5 @@ services:
     
     # Volúmenes comentados (persistencia de datos)
     # En producción se deberían usar para persistir datos entre reinicios
-    # volumes:
-    #   - ./mongo:/data/db  # Mapea directorio local a directorio de datos de MongoDB
+    volumes:
+      - ./mongo:/data/db  # Mapea directorio local a directorio de datos de MongoDB
