@@ -16,7 +16,7 @@
 # ========== STAGE 1: INSTALACIÓN DE DEPENDENCIAS ==========
 # Instalar dependencias solo cuando sea necesario
 # AS deps: Nombra este stage como "deps" para referenciarlo después
-FROM node:18-alpine3.15 AS deps
+FROM node:20-alpine AS deps
 
 # Instalar dependencias del sistema necesarias para compilar módulos nativos
 # --no-cache: No guarda cache de paquetes para mantener la imagen pequeña
@@ -43,7 +43,7 @@ RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
 
 # ========== STAGE 2: CONSTRUCCIÓN DE LA APLICACIÓN ==========
 # Construir la aplicación con las dependencias ya instaladas
-FROM node:18-alpine3.15 AS builder
+FROM node:20-alpine AS builder
 
 # Establecer directorio de trabajo para el build
 WORKDIR /app
@@ -63,7 +63,7 @@ RUN yarn build
 
 # ========== STAGE 3: IMAGEN DE PRODUCCIÓN ==========
 # Imagen final de producción, copia archivos necesarios y ejecuta la aplicación
-FROM node:18-alpine3.15 AS runner
+FROM node:20-alpine AS runner
 
 # Establecer directorio de trabajo para la aplicación en producción
 # /usr/src/app: Directorio estándar para aplicaciones en contenedores
