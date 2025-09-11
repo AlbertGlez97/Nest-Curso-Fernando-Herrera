@@ -1,0 +1,12 @@
+# Ignorar archivos innecesarios para el build de Docker
+node_modules/
+dist/
+.git/
+.gitignore
+*.md
+.env
+.env.*
+!.env.template
+coverage/
+.nyc_output/
+*.log

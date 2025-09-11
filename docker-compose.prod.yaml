@@ -1,0 +1,99 @@
+# ===================================================================
+# DOCKER COMPOSE PARA PRODUCCIÓN - APLICACIÓN POKÉDX
+# ===================================================================
+# 
+# ¿QUÉ ES DOCKER COMPOSE?
+# Docker Compose es una herramienta para definir y ejecutar aplicaciones
+# multi-contenedor de Docker. Permite configurar múltiples servicios,
+# redes y volúmenes en un solo archivo YAML.
+#
+# VENTAJAS DE DOCKER COMPOSE:
+# 1. ORQUESTACIÓN: Maneja múltiples contenedores como una sola aplicación
+# 2. CONFIGURACIÓN DECLARATIVA: Todo en un archivo legible
+# 3. NETWORKING AUTOMÁTICO: Los servicios pueden comunicarse entre sí
+# 4. GESTIÓN DE DEPENDENCIAS: Controla el orden de inicio de servicios
+# 5. ESCALABILIDAD: Fácil replicación y escalado de servicios
+# ===================================================================
+
+# Versión del formato de Docker Compose
+# Versión 3: Compatible con Docker Engine 17.06.0+ y Docker Swarm
+version: '3'
+
+# Definición de todos los servicios (contenedores) de la aplicación
+services:
+  
+  # ========== SERVICIO DE LA APLICACIÓN NEST.JS ==========
+  pokedexapp:
+    # Dependencias: Este servicio requiere que otros servicios estén corriendo primero
+    # La aplicación necesita que MongoDB esté disponible antes de iniciarse
+    depends_on:
+      - db  # Espera a que el servicio "db" (MongoDB) esté corriendo
+    
+    # Configuración de construcción de la imagen
+    build: 
+      context: .              # Directorio donde buscar el Dockerfile (directorio actual)
+      dockerfile: Dockerfile  # Nombre del archivo Dockerfile a usar
+    
+    # Nombre de la imagen que se creará después del build
+    # Esta imagen se puede reutilizar y distribuir
+    image: pokedex-docker
+    
+    # Nombre específico para el contenedor (más fácil de identificar)
+    # Sin esto, Docker asignaría un nombre aleatorio
+    container_name: pokedexapp
+    
+    # Política de reinicio del contenedor
+    # always: Reinicia automáticamente si el contenedor se detiene por cualquier razón
+    # Útil en producción para mantener la aplicación corriendo
+    restart: always # reiniciar el contenedor si se detiene
+    
+    # Mapeo de puertos: HOST:CONTENEDOR
+    # ${PORT}: Variable de entorno que define el puerto del host
+    # El segundo ${PORT}: Puerto interno del contenedor donde corre la app
+    # Ejemplo: Si PORT=3000, mapea puerto 3000 del host al 3000 del contenedor
+    ports:
+      - "${PORT}:${PORT}"
+    
+    # Directorio de trabajo comentado (ya está definido en el Dockerfile)
+    # working_dir: /var/www/pokedex
+    
+    # Variables de entorno que se pasan al contenedor
+    # Estas variables son leídas por la aplicación NestJS
+    environment:
+      MONGODB: ${MONGODB}           # URL de conexión a MongoDB
+      PORT: ${PORT}                 # Puerto donde correrá la aplicación
+      DEFAULT_LIMIT: ${DEFAULT_LIMIT}  # Límite por defecto para paginación
+    
+    # Volúmenes comentados (no se usan en producción)
+    # En producción se prefiere copiar archivos en build time, no mount time
+    # volumes:
+    #   - ./:/var/www/pokedex
+
+  # ========== SERVICIO DE BASE DE DATOS MONGODB ==========
+  db:
+    # Imagen oficial de MongoDB versión 5 desde Docker Hub
+    # No necesita build porque usa una imagen pre-construida
+    image: mongo:5
+    
+    # Nombre específico para el contenedor de MongoDB
+    container_name: mongo-poke
+    
+    # Política de reinicio automático
+    # Asegura que la base de datos esté siempre disponible
+    restart: always
+    
+    # Mapeo de puertos para MongoDB
+    # 27017: Puerto estándar de MongoDB
+    # HOST:CONTENEDOR - Permite conexiones externas al contenedor
+    ports:
+      - 27017:27017
+    
+    # Variables de entorno específicas de MongoDB
+    environment:
+      # Nombre de la base de datos que se creará automáticamente
+      MONGODB_DATABASE: nest-pokemon
+    
+    # Volúmenes comentados (persistencia de datos)
+    # En producción se deberían usar para persistir datos entre reinicios
+    # volumes:
+    #   - ./mongo:/data/db  # Mapea directorio local a directorio de datos de MongoDB
