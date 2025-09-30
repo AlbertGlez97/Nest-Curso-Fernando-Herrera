@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { PaginationDto } from 'src/common/dtos/pagination.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -23,8 +34,9 @@ export class ProductsController {
           slug: 'camiseta-nike-basica',
           stock: 50,
           sizes: ['S', 'M', 'L', 'XL'],
-          gender: 'unisex'
-        }
+          gender: 'unisex',
+          tags: ['camiseta', 'nike'],
+        },
       },
       example2: {
         summary: 'Producto sin campos opcionales',
@@ -32,28 +44,31 @@ export class ProductsController {
         value: {
           title: 'Zapatos Adidas Running',
           sizes: ['38', '39', '40', '41', '42'],
-          gender: 'men'
-        }
-      }
-    }
+          gender: 'men',
+        },
+      },
+    },
   })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.productsService.findAll(paginationDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  @Get(':term')
+  findOne(@Param('term') term: string) {
+    return this.productsService.findOne(term);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productsService.update(+id, updateProductDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateProductDto: UpdateProductDto,
+  ) {
+    return this.productsService.update(id, updateProductDto);
   }
 
   @Delete(':id')

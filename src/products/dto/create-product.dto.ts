@@ -41,7 +41,8 @@ export class CreateProductDto {
   description?: string;
 
   @ApiProperty({
-    description: 'URL amigable del producto (se genera automáticamente si no se proporciona)',
+    description:
+      'URL amigable del producto (se genera automáticamente si no se proporciona)',
     example: 'camiseta-nike-basica',
     required: false,
   })
@@ -77,4 +78,15 @@ export class CreateProductDto {
   })
   @IsIn(['men', 'women', 'kid', 'unisex'])
   gender: string;
+
+  @ApiProperty({
+    description: 'Etiquetas para el filtrado del producto',
+    example: ['amarrilla', 'nike', 'sueter'],
+    isArray: true,
+    type: String,
+  })
+  @IsString({ each: true })
+  @IsArray()
+  @IsOptional()
+  tags: string[];
 }
