@@ -89,4 +89,15 @@ export class CreateProductDto {
   @IsArray()
   @IsOptional()
   tags: string[];
+
+  @ApiProperty({
+    description: 'Agregar images',
+    example: ['url://image1.png'],
+    isArray: true,
+    type: String,
+  })
+  @IsString({ each: true })
+  @IsArray()
+  @IsOptional()
+  images?: string[];
 }
