@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(yarn install)",
-      "Bash(yarn start:dev)"
+      "Bash(yarn start:dev)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker volume:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

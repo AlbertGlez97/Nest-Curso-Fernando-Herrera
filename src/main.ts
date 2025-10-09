@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap')
 
   app.setGlobalPrefix('api');// Prefijo global para todas las rutas
 
@@ -26,8 +27,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Configuración del puerto de la aplicación desde variable de entorno
   await app.listen(process.env.PORT!);
-  console.log(`Application is running on: ${await app.getUrl()}/api`); // Muestra la URL completa con el prefijo
-  console.log(`Swagger UI is available at: ${await app.getUrl()}/api/docs`); // URL de Swagger UI
+  logger.log(`Application is running on: ${await app.getUrl()}/api`); // Muestra la URL completa con el prefijo
+  logger.log(`Swagger UI is available at: ${await app.getUrl()}/api/docs`); // URL de Swagger UI
 }
 bootstrap();

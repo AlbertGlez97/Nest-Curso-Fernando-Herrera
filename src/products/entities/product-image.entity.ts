@@ -12,7 +12,7 @@ import { Product } from '.';
 // =========================================================================
 // Esta entidad maneja la relación N:1 con Product
 // Múltiples imágenes pueden pertenecer a un solo producto
-@Entity()
+@Entity({name: 'product_images'})
 export class ProductImage {
 
   // =========================================================================

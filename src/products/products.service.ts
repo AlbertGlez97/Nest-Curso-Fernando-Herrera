@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -34,6 +35,9 @@ export class ProductsService {
 
     // DataSource para operaciones avanzadas como transacciones
     private readonly dataSource: DataSource,
+
+    // ConfigService para acceder a variables de entorno (HOST_API)
+    private readonly configService: ConfigService,
   ) {}
 
   // =========================================================================
@@ -101,16 +105,15 @@ export class ProductsService {
     });
 
     // FORMATEAR LA RESPUESTA:
-    // Transformamos cada producto para que las imágenes sean solo URLs (strings)
-    // en lugar de objetos ProductImage completos
+    // Transformamos cada producto para incluir URLs completas de imágenes
     return products.map((product) => ({
       ...product, // Mantener todas las propiedades del producto
 
       // TRANSFORMAR IMÁGENES:
       // Convertir de: [{ id: 1, url: "img1.jpg" }, { id: 2, url: "img2.jpg" }]
-      // A: ["img1.jpg", "img2.jpg"]
-      // El operador ?. maneja el caso donde product.images sea undefined/null
-      images: product.images?.map((img) => img.url),
+      // A: ["http://localhost:50278/api/files/product/img1.jpg", "http://localhost:50278/api/files/product/img2.jpg"]
+      // Por cada imagen, transformamos su URL usando el método privado
+      images: product.images?.map((img) => this.transformImageUrl(img.url)),
     }));
   }
 
@@ -188,11 +191,11 @@ export class ProductsService {
     return {
       ...rest, // Todas las propiedades del producto (id, title, price, etc.)
 
-      // SIMPLIFICAR IMÁGENES:
+      // TRANSFORMAR Y SIMPLIFICAR IMÁGENES:
       // Convertir de: [{ id: 1, url: "img1.jpg", product: {...} }, ...]
-      // A: ["img1.jpg", "img2.jpg", ...]
-      // Esto elimina los metadatos innecesarios de ProductImage
-      images: images.map((image) => image.url),
+      // A: ["http://localhost:50278/api/files/product/img1.jpg", "http://localhost:50278/api/files/product/img2.jpg", ...]
+      // Por cada imagen, extraemos la URL y la transformamos a URL pública completa
+      images: images.map((image) => this.transformImageUrl(image.url)),
     };
   }
 
@@ -325,6 +328,32 @@ export class ProductsService {
     //
     // RETORNA: DeleteResult con información sobre cuántas filas se afectaron
     return this.productRepository.delete({ id });
+  }
+
+  // =========================================================================
+  // TRANSFORMAR URL DE IMAGEN A URL PÚBLICA COMPLETA
+  // =========================================================================
+  /**
+   * Transforma una URL de imagen a URL pública completa
+   *
+   * @param imageUrl - El nombre del archivo de imagen (ej: "a3f5c8d9-1234.jpeg")
+   * @returns La URL pública completa de la imagen
+   *
+   * @example
+   * const url = this.transformImageUrl("a3f5c8d9-1234.jpeg");
+   * // Resultado: "http://localhost:50278/api/files/product/a3f5c8d9-1234.jpeg"
+   */
+  private transformImageUrl(imageUrl: string): string {
+    // VALIDACIÓN: Si la URL ya está transformada (empieza con "http"), retornarla sin cambios
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+
+    // OBTENER HOST_API desde variables de entorno
+    const hostApi = this.configService.get<string>('HOST_API');
+
+    // CONSTRUCCIÓN DE LA URL COMPLETA
+    return `${hostApi}/files/product/${imageUrl}`;
   }
 
   // =========================================================================

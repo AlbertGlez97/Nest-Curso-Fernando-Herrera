@@ -13,7 +13,7 @@ import { ProductImage } from './';
 // =========================================================================
 // @Entity() le dice a TypeORM que esta clase representa una tabla en la BD
 // Por defecto, el nombre de la tabla será 'product' (nombre de la clase en minúsculas)
-@Entity()
+@Entity({name: 'products'})
 export class Product {
 
   // =========================================================================
