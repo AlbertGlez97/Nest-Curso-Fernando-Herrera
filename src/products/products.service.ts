@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -14,6 +8,7 @@ import { PaginationDto } from 'src/common/dtos/pagination.dto';
 import { validate as isUUID } from 'uuid';
 import { Product, ProductImage } from './entities';
 import { DataSource } from 'typeorm';
+import { handleDBExceptions } from 'src/common/helpers/handleDBExceptions.helper';
 
 // =========================================================================
 // SERVICIO DE PRODUCTOS - LÓGICA DE NEGOCIO
@@ -74,11 +69,10 @@ export class ProductsService {
       // Combinamos los datos del producto guardado con las URLs de imágenes
       // para mantener un formato consistente en la respuesta de la API
       return { ...product, images };
-
     } catch (error) {
       // Si algo sale mal (ej: violación de constraints únicos),
       // delegamos el manejo a nuestro método especializado
-      this.handleDBExceptions(error);
+      handleDBExceptions(error, this.logger);
     }
   }
 
@@ -93,8 +87,8 @@ export class ProductsService {
 
     // CONSULTAR LA BASE DE DATOS:
     const products = await this.productRepository.find({
-      take: limit,    // LIMIT en SQL - cuántos registros máximo retornar
-      skip: offset,   // OFFSET en SQL - cuántos registros saltar desde el inicio
+      take: limit, // LIMIT en SQL - cuántos registros máximo retornar
+      skip: offset, // OFFSET en SQL - cuántos registros saltar desde el inicio
 
       // INCLUIR RELACIONES:
       // Esto hace un LEFT JOIN con la tabla ProductImage
@@ -151,7 +145,7 @@ export class ProductsService {
         // :title y :slug son parámetros que se pasan en el objeto siguiente
         .where('LOWER(title) = :title OR LOWER(slug) = :slug', {
           title: term.toLowerCase(), // Reemplaza :title
-          slug: term.toLowerCase(),  // Reemplaza :slug
+          slug: term.toLowerCase(), // Reemplaza :slug
         })
         // INCLUIR RELACIONES:
         // leftJoinAndSelect incluye las imágenes del producto en el resultado
@@ -301,7 +295,6 @@ export class ProductsService {
 
       // Retornamos el producto actualizado desde la BD para confirmar los cambios
       return this.findOnePlain(id);
-
     } catch (error) {
       // ROLLBACK: Si algo falló, deshacemos TODOS los cambios
       // La BD queda exactamente como estaba antes de empezar
@@ -311,7 +304,7 @@ export class ProductsService {
       await queryRunner.release();
 
       // Re-lanzamos el error para que el controlador pueda manejarlo
-      this.handleDBExceptions(error);
+      handleDBExceptions(error, this.logger);
     }
   }
 
@@ -357,31 +350,6 @@ export class ProductsService {
   }
 
   // =========================================================================
-  // MANEJO CENTRALIZADO DE ERRORES DE BASE DE DATOS
-  // =========================================================================
-  private handleDBExceptions(error: any) {
-    // ERROR DE VIOLACIÓN DE CONSTRAINT ÚNICO (PostgreSQL):
-    // Código 23505 = duplicate key value violates unique constraint
-    // Esto ocurre cuando intentamos insertar un title o slug que ya existe
-    if (error.code == '23505') {
-      // Convertir el error técnico de PostgreSQL en un error HTTP 400 comprensible
-      // error.detail contiene información específica sobre qué campo duplicado
-      throw new BadRequestException(error.detail);
-    }
-
-    // LOGGING PARA ERRORES INESPERADOS:
-    // Registrar el error completo en los logs del servidor para debugging
-    this.logger.error(error);
-
-    // ERROR GENÉRICO PARA EL CLIENTE:
-    // Para cualquier otro error no manejado específicamente,
-    // retornar un error HTTP 500 sin exponer detalles internos
-    throw new InternalServerErrorException(
-      'Únexpected error, check server logs',
-    );
-  }
-
-  // =========================================================================
   // ELIMINAR TODOS LOS PRODUCTOS (MÉTODO AUXILIAR)
   // =========================================================================
   async deleteAllProducts() {
@@ -398,11 +366,10 @@ export class ProductsService {
       // Equivale a: DELETE FROM product
       // ⚠️ PELIGROSO: Esto elimina TODOS los productos de la base de datos
       return await query.delete().where({}).execute();
-
     } catch (error) {
       // MANEJO DE ERRORES:
       // Usar nuestro método centralizado para manejar errores de BD
-      this.handleDBExceptions(error);
+      handleDBExceptions(error, this.logger);
     }
   }
 }

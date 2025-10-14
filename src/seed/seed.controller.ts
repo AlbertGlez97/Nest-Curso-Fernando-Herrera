@@ -2,6 +2,8 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SeedService } from './seed.service';
 import { initialData } from './data/seed-data';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { ValidRoles } from 'src/auth/interfaces';
 
 // =========================================================================
 // CONTROLADOR SEED - DOCUMENTACIÓN CON SWAGGER
@@ -38,20 +40,21 @@ export class SeedController {
     1. Elimina todos los productos existentes
     2. Inserta productos predefinidos en paralelo
     3. Retorna confirmación de ejecución exitosa
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
     description: 'Seed ejecutado correctamente',
     schema: {
       type: 'string',
-      example: 'SEED EXECUTED'
-    }
+      example: 'SEED EXECUTED',
+    },
   })
   @ApiResponse({
     status: 500,
-    description: 'Error interno del servidor durante la ejecución del seed'
+    description: 'Error interno del servidor durante la ejecución del seed',
   })
+  @Auth(ValidRoles.ADMIN, ValidRoles.SUPER_USER)
   executeSeed() {
     return this.seedService.runSeed();
   }

@@ -4,6 +4,7 @@ import { ProductsController } from './products.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product, ProductImage } from './entities';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from 'src/auth/auth.module';
 
 // =========================================================================
 // MÓDULO DE PRODUCTOS - CONFIGURACIÓN PARA EXPORTAR SERVICIOS
@@ -25,6 +26,7 @@ import { ConfigModule } from '@nestjs/config';
     // ConfigModule: Permite acceder a variables de entorno (.env)
     // Necesario para obtener HOST_API en ProductsService
     ConfigModule,
+    AuthModule,
   ],
 
   // =========================================================================
@@ -50,6 +52,6 @@ import { ConfigModule } from '@nestjs/config';
   // REGLA GENERAL:
   // - providers = "Lo que este módulo puede usar"
   // - exports = "Lo que este módulo comparte con otros"
-  exports: [ProductsService, TypeOrmModule]
+  exports: [ProductsService, TypeOrmModule],
 })
 export class ProductsModule {}

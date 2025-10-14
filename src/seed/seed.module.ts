@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SeedService } from './seed.service';
 import { SeedController } from './seed.controller';
 import { ProductsModule } from 'src/products/products.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 // =========================================================================
 // MÓDULO SEED - DEMOSTRACIÓN DE IMPORTACIÓN DE SERVICIOS DE OTROS MÓDULOS
@@ -38,6 +39,6 @@ import { ProductsModule } from 'src/products/products.module';
   // SeedService.constructor → (ProductsService inyectado automáticamente)
   //        ↓
   // SeedService puede usar → this.productsService.deleteAllProducts()
-  imports: [ProductsModule]
+  imports: [ProductsModule, AuthModule],
 })
 export class SeedModule {}
