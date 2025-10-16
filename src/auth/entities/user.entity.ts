@@ -1,5 +1,6 @@
 import { Product } from 'src/products/entities';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
 // =========================================================================
 // ENTIDAD USER - REPRESENTACIÓN DE USUARIOS EN LA BASE DE DATOS
@@ -31,6 +32,11 @@ export class User {
   // ✅ Se puede generar en cliente o servidor
   //
   // EJEMPLO: "550e8400-e29b-41d4-a716-446655440000"
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'User ID (UUID)',
+    uniqueItems: true,
+  })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -38,6 +44,11 @@ export class User {
   // EMAIL - IDENTIFICADOR ÚNICO DEL USUARIO
   // =======================================================================
   // El email sirve como username y debe ser único en toda la base de datos
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'User email (unique)',
+    uniqueItems: true,
+  })
   @Column({
     type: 'text',
     // UNIQUE CONSTRAINT: Garantiza que no existan dos usuarios con el mismo email
@@ -63,6 +74,11 @@ export class User {
   // - Significa que el algoritmo se ejecuta 2^10 = 1024 veces
   // - Cada incremento duplica el tiempo de procesamiento
   // - 10 es el valor recomendado por bcrypt (2023)
+  @ApiProperty({
+    example: '$2b$10$abcd1234...',
+    description: 'User password (hashed with bcrypt)',
+    writeOnly: true,
+  })
   @Column({
     type: 'text',
     select: false, // Excluye la contraseña en consultas normales
@@ -74,6 +90,10 @@ export class User {
   // =======================================================================
   // Almacena el nombre real del usuario para personalización
   // Ejemplo: "Juan Pérez", "María González"
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'User full name',
+  })
   @Column({
     type: 'text',
   })
@@ -99,6 +119,11 @@ export class User {
   // - Usuario solicita eliminación de cuenta (GDPR)
   // - Administrador suspende una cuenta por violación de términos
   // - Usuario quiere tomar un "descanso" de la plataforma
+  @ApiProperty({
+    example: true,
+    description: 'User active status',
+    default: true,
+  })
   @Column({
     type: 'bool',
     default: true, // Por defecto, usuarios nuevos están activos
@@ -135,6 +160,11 @@ export class User {
   // TIPO 'text' CON 'array: true' en PostgreSQL:
   // Crea una columna de tipo text[] (array de texto)
   // Se almacena así: ["user", "admin"]
+  @ApiProperty({
+    example: ['user'],
+    description: 'User roles for RBAC',
+    default: ['user'],
+  })
   @Column({
     type: 'text',
     array: true,
@@ -142,6 +172,11 @@ export class User {
   })
   roles: string[];
 
+  @ApiProperty({
+    type: () => Product,
+    description: 'Products created by this user',
+    isArray: true,
+  })
   @OneToMany(() => Product, (product) => product.user)
   product: Product;
 }

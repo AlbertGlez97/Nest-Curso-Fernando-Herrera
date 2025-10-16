@@ -8,7 +8,8 @@
       "Bash(docker exec:*)",
       "Bash(docker-compose:*)",
       "Bash(docker volume:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(yarn add redoc-express)"
     ],
     "deny": [],
     "ask": []

@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { ProductImage } from './';
 import { User } from 'src/auth/entities/user.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 // =========================================================================
 // ENTIDAD PRODUCTO - DEFINICIÓN DE TABLA Y RELACIONES
@@ -25,6 +26,7 @@ export class Product {
   // - Se genera automáticamente como UUID (ej: "550e8400-e29b-41d4-a716-446655440000")
   // - Los UUIDs son únicos globalmente, útiles para sistemas distribuidos
   // - Alternativa: 'increment' para IDs numéricos auto-incrementales
+  @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -35,6 +37,11 @@ export class Product {
   // TÍTULO DEL PRODUCTO:
   // @Column('text') especifica que es una columna de tipo TEXT en PostgreSQL
   // unique: true crea un índice único, no pueden existir dos productos con el mismo título
+  @ApiProperty({
+    example: 'T-Shirt Teslo',
+    description: 'Product title',
+    uniqueItems: true,
+  })
   @Column('text', {
     unique: true,
   })
@@ -43,6 +50,10 @@ export class Product {
   // PRECIO DEL PRODUCTO:
   // 'float' permite números decimales (ej: 29.99)
   // default: 0 establece un valor por defecto si no se proporciona
+  @ApiProperty({
+    example: 0,
+    description: 'Product price',
+  })
   @Column('float', {
     default: 0,
   })
@@ -51,6 +62,11 @@ export class Product {
   // DESCRIPCIÓN DEL PRODUCTO:
   // nullable: true permite que este campo sea NULL en la base de datos
   // Es opcional, no todos los productos necesitan descripción
+  @ApiProperty({
+    example: 'Anim reprehenderit nulla in anim mollit minim irure commodo.',
+    description: 'Product description',
+    required: false,
+  })
   @Column({
     type: 'text',
     nullable: true,
@@ -61,6 +77,11 @@ export class Product {
   // El slug es una versión "limpia" del título para usar en URLs
   // Ej: "Camiseta Nike Básica" -> "camiseta-nike-basica"
   // unique: true asegura que cada slug sea único
+  @ApiProperty({
+    example: 't_shirt_teslo',
+    description: 'Product SLUG - for SEO',
+    uniqueItems: true,
+  })
   @Column('text', {
     unique: true,
   })
@@ -69,6 +90,11 @@ export class Product {
   // INVENTARIO DISPONIBLE:
   // 'int' para números enteros (no decimales)
   // default: 0 significa que por defecto no hay stock
+  @ApiProperty({
+    example: 10,
+    description: 'Product stock',
+    default: 0,
+  })
   @Column('int', {
     default: 0,
   })
@@ -78,6 +104,10 @@ export class Product {
   // array: true crea una columna de tipo ARRAY en PostgreSQL
   // Almacena: ['S', 'M', 'L', 'XL'] directamente en la base de datos
   // PostgreSQL soporta arrays nativamente, otros DBs podrían necesitar serialización JSON
+  @ApiProperty({
+    example: ['M', 'XL', 'XXL'],
+    description: 'Product sizes',
+  })
   @Column('text', {
     array: true,
   })
@@ -86,6 +116,10 @@ export class Product {
   // GÉNERO OBJETIVO:
   // Campo simple de texto para categorizar productos
   // Valores típicos: 'men', 'women', 'kid', 'unisex'
+  @ApiProperty({
+    example: 'women',
+    description: 'Product gender',
+  })
   @Column('text')
   gender: string;
 
@@ -93,6 +127,11 @@ export class Product {
   // Similar a sizes, usa array de PostgreSQL
   // default: [] asegura que siempre sea un array, nunca null
   // Útil para filtros: ['nike', 'deportivo', 'algodón']
+  @ApiProperty({
+    example: ['shirt', 'women'],
+    description: 'Product tags',
+    default: [],
+  })
   @Column({
     type: 'text',
     array: true,
@@ -128,12 +167,22 @@ export class Product {
   //
   // ¿Por qué images?: El signo ? indica que es opcional
   // Un producto puede existir sin imágenes durante la creación
+  @ApiProperty({
+    example: [
+      { id: 1, url: 'http://localhost:3000/api/files/product/1234.jpg' },
+    ],
+    description: 'Product images',
+  })
   @OneToMany(() => ProductImage, (productImage) => productImage.product, {
     cascade: true, // Guardar/eliminar imágenes automáticamente con el producto
     eager: true, // Cargar imágenes automáticamente en cada consulta
   })
   images?: ProductImage[];
 
+  @ApiProperty({
+    type: () => User,
+    description: 'User who created the product',
+  })
   @ManyToOne(() => User, (user) => user.product, { eager: true })
   user: User;
 

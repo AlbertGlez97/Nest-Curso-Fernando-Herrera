@@ -120,6 +120,7 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'Usuario registrado exitosamente',
+    type: User,
   })
   @ApiResponse({
     status: 400,
@@ -161,6 +162,15 @@ export class AuthController {
   //   })
   // })
   // ```
+  @ApiResponse({
+    status: 200,
+    description: 'Login exitoso',
+    type: User,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Credenciales inválidas',
+  })
   @Post('login')
   loginUser(@Body() loginUserDto: LoginUserDto) {
     return this.authService.login(loginUserDto);
@@ -529,6 +539,15 @@ export class AuthController {
   // ⚠️ Si el token es robado, sigue siendo válido hasta que expire
   // ⚠️ Para apps críticas, considera refresh tokens con rotación
   // ⚠️ Implementa token blacklist para logout inmediato si es necesario
+  @ApiResponse({
+    status: 200,
+    description: 'Token válido, devuelve usuario con nuevo token',
+    type: User,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token inválido o expirado',
+  })
   @Get('check-auth-status')
   @Auth()
   checkAuthStatus(@GetUser() user: User) {

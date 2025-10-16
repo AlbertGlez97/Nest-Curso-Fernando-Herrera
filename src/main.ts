@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import redocSetup from 'redoc-express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,9 +29,17 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Configuración de Redoc
+  const redocOptions = {
+    title: 'Teslo Shop API - Redoc',
+    specUrl: '/api/docs-json',
+  };
+  app.use('/api/redoc', redocSetup(redocOptions));
+
   // Configuración del puerto de la aplicación desde variable de entorno
   await app.listen(process.env.PORT!);
   logger.log(`Application is running on: ${await app.getUrl()}/api`); // Muestra la URL completa con el prefijo
   logger.log(`Swagger UI is available at: ${await app.getUrl()}/api/docs`); // URL de Swagger UI
+  logger.log(`Redoc is available at: ${await app.getUrl()}/api/redoc`); // URL de Redoc
 }
 bootstrap();

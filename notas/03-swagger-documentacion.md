@@ -1,29 +1,53 @@
 # Swagger - Documentación de API
 
-## ¿Qué es Swagger?
+## 📚 Índice
 
-**Swagger** (ahora conocido como OpenAPI) es una herramienta que permite:
-- **Documentar APIs automáticamente**: Genera documentación interactiva basada en tu código
-- **Probar endpoints**: Interfaz web para hacer peticiones HTTP directamente
-- **Validar contratos**: Asegura que la API funciona como está documentada
-- **Generar clientes**: Crear código cliente en diferentes lenguajes
+1. [Introducción](#introducción)
+2. [Instalación y Configuración](#instalación-y-configuración)
+3. [Decoradores de Documentación](#decoradores-de-documentación)
+4. [PartialType y DTOs](#partialtype-y-dtos)
+5. [Mejores Prácticas](#mejores-prácticas)
+6. [Autenticación JWT](#autenticación-jwt)
+7. [Herramientas Adicionales](#herramientas-adicionales)
 
-## Instalación
+---
+
+## Introducción
+
+### ¿Qué es Swagger/OpenAPI?
+
+**Swagger** (ahora **OpenAPI**) es una especificación para documentar APIs REST:
+
+- **Documentación automática**: Genera docs interactivas desde el código
+- **Testing integrado**: Prueba endpoints directamente desde el navegador
+- **Validación de contratos**: Verifica que la API cumple con su especificación
+- **Generación de clientes**: Crea código cliente para múltiples lenguajes
+
+### Alternativas de visualización
+
+- **Swagger UI**: Interfaz interactiva para testing (incluida por defecto)
+- **Redoc**: Documentación más limpia y profesional (mejor para compartir)
+
+---
+
+## Instalación y Configuración
+
+### 1. Instalar dependencias
 
 ```bash
 yarn add @nestjs/swagger swagger-ui-express
 ```
 
-**Dependencias:**
-- `@nestjs/swagger`: Integración oficial de Swagger con NestJS
-- `swagger-ui-express`: Motor que renderiza la interfaz web
+**Opcional: Redoc**
+```bash
+yarn add redoc-express
+```
 
-## Configuración Básica
-
-### main.ts
+### 2. Configurar en `main.ts`
 
 ```typescript
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import redocSetup from 'redoc-express'; // Opcional
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -33,33 +57,38 @@ async function bootstrap() {
     .setTitle('Teslo Shop API')
     .setDescription('Teslo shop endpoints')
     .setVersion('1.0')
+    .addBearerAuth() // Para JWT
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
+  // Swagger UI
   SwaggerModule.setup('api/docs', app, document);
 
+  // Redoc (opcional)
+  app.use('/api/redoc', redocSetup({
+    title: 'Teslo Shop API - Redoc',
+    specUrl: '/api/docs-json',
+  }));
+
   await app.listen(3000);
-  console.log(`Swagger UI: ${await app.getUrl()}/api/docs`);
+  logger.log(`Swagger UI: ${await app.getUrl()}/api/docs`);
+  logger.log(`Redoc: ${await app.getUrl()}/api/redoc`);
 }
 ```
 
-### Acceder a Swagger UI
+### 3. Acceder a la documentación
 
-Una vez configurado, visita:
-```
-http://localhost:3000/api/docs
-```
+- **Swagger UI**: `http://localhost:3000/api/docs`
+- **Redoc**: `http://localhost:3000/api/redoc`
 
-Verás:
-- Lista de todos los endpoints organizados por controladores
-- Esquemas de los DTOs y entidades
-- Interfaz para probar cada endpoint
-- Documentación de parámetros, respuestas y códigos de estado
+---
 
-## Decoradores Principales
+## Decoradores de Documentación
 
 ### @ApiTags()
-Organiza endpoints por categorías en la UI.
+
+**Propósito**: Agrupa endpoints por categorías en la UI
 
 ```typescript
 @ApiTags('Products')
@@ -67,14 +96,25 @@ Organiza endpoints por categorías en la UI.
 export class ProductsController {}
 ```
 
+---
+
 ### @ApiProperty()
-Documenta propiedades de DTOs en la sección "Schemas".
+
+**Propósito**: Documenta propiedades de DTOs y Entidades
+
+**Ubicación**:
+- **DTOs**: Documenta estructura de entrada (request)
+- **Entidades**: Documenta estructura de salida (response)
+
+#### En DTOs (Input)
 
 ```typescript
+import { ApiProperty } from '@nestjs/swagger';
+
 export class CreateProductDto {
   @ApiProperty({
     description: 'Nombre del producto',
-    example: 'Camiseta Nike Básica',
+    example: 'Camiseta Nike',
     minLength: 1,
   })
   @IsString()
@@ -82,109 +122,146 @@ export class CreateProductDto {
   title: string;
 
   @ApiProperty({
-    description: 'Precio del producto en dólares',
+    description: 'Precio en dólares',
     example: 29.99,
     minimum: 0,
     required: false,
   })
-  @IsNumber()
-  @IsPositive()
   @IsOptional()
+  @IsPositive()
   price?: number;
 
   @ApiProperty({
     description: 'Tallas disponibles',
-    example: ['S', 'M', 'L', 'XL'],
+    example: ['S', 'M', 'L'],
     isArray: true,
-    type: String,
   })
-  @IsString({ each: true })
   @IsArray()
   sizes: string[];
-
-  @ApiProperty({
-    description: 'Género al que está dirigido',
-    example: 'unisex',
-    enum: ['men', 'women', 'kid', 'unisex'],
-  })
-  @IsIn(['men', 'women', 'kid', 'unisex'])
-  gender: string;
 }
 ```
 
-### Propiedades de @ApiProperty
+#### En Entidades (Output)
+
+```typescript
+@Entity({ name: 'products' })
+export class Product {
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Product UUID',
+  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ApiProperty({
+    example: 'T-Shirt Teslo',
+    description: 'Product title',
+  })
+  @Column('text')
+  title: string;
+
+  // Relación
+  @ApiProperty({
+    type: () => User,
+    description: 'User who created the product',
+  })
+  @ManyToOne(() => User, (user) => user.product)
+  user: User;
+}
+```
+
+#### Propiedades disponibles
 
 | Propiedad | Descripción | Ejemplo |
 |-----------|-------------|---------|
-| `description` | Explica qué hace el campo | `'Nombre del producto'` |
-| `example` | Valor de ejemplo | `'Camiseta Nike'` |
-| `required` | Si es obligatorio | `false` para opcionales |
-| `minimum/maximum` | Límites para números | `minimum: 0` |
-| `minLength/maxLength` | Longitud para strings | `minLength: 1` |
+| `description` | Descripción del campo | `'Nombre del producto'` |
+| `example` | Valor de ejemplo | `'Nike Shirt'` |
+| `required` | Si es obligatorio | `false` |
+| `minimum/maximum` | Límites numéricos | `minimum: 0` |
+| `minLength/maxLength` | Longitud de strings | `minLength: 1` |
 | `enum` | Valores permitidos | `['men', 'women']` |
-| `isArray` | Si es un array | `true` |
-| `type` | Tipo de datos | `String`, `Number` |
+| `isArray` | Indica si es array | `true` |
+| `type` | Tipo (para relaciones) | `() => User` |
+| `default` | Valor por defecto | `10` |
+| `uniqueItems` | Valores únicos | `true` |
+| `writeOnly` | Solo escritura | `true` (passwords) |
 
-### @ApiBody()
-Proporciona ejemplos completos para testing en endpoints.
-
-```typescript
-@Post()
-@ApiBody({
-  type: CreateProductDto,
-  examples: {
-    example1: {
-      summary: 'Producto completo',
-      description: 'Ejemplo con todos los campos',
-      value: {
-        title: 'Camiseta Nike Básica',
-        price: 29.99,
-        description: 'Camiseta de algodón 100%',
-        slug: 'camiseta-nike-basica',
-        stock: 50,
-        sizes: ['S', 'M', 'L', 'XL'],
-        gender: 'unisex',
-        tags: ['nike', 'deportivo'],
-        images: ['url://image1.png']
-      }
-    },
-    example2: {
-      summary: 'Producto mínimo',
-      description: 'Solo campos requeridos',
-      value: {
-        title: 'Zapatos Adidas',
-        sizes: ['38', '39', '40'],
-        gender: 'men'
-      }
-    }
-  }
-})
-create(@Body() createProductDto: CreateProductDto) {
-  return this.productsService.create(createProductDto);
-}
-```
+---
 
 ### @ApiResponse()
-Documenta las respuestas posibles.
+
+**Propósito**: Documenta respuestas de endpoints
+
+#### ✅ Forma recomendada (con `type`)
 
 ```typescript
 @Get(':id')
 @ApiResponse({
   status: 200,
   description: 'Producto encontrado',
-  type: Product
+  type: Product, // Usa la entidad
 })
 @ApiResponse({
   status: 404,
-  description: 'Producto no encontrado'
+  description: 'Producto no encontrado',
 })
 findOne(@Param('id') id: string) {
   return this.productsService.findOne(id);
 }
 ```
 
+#### Para arrays
+
+```typescript
+@Get()
+@ApiResponse({
+  status: 200,
+  description: 'Lista de productos',
+  type: [Product], // Array de productos
+})
+findAll() {
+  return this.productsService.findAll();
+}
+```
+
+---
+
+### @ApiBody()
+
+**Propósito**: Ejemplos múltiples para testing
+
+```typescript
+@Post()
+@ApiBody({
+  type: CreateProductDto,
+  examples: {
+    completo: {
+      summary: 'Producto completo',
+      value: {
+        title: 'Nike Shirt',
+        price: 29.99,
+        sizes: ['S', 'M', 'L'],
+        gender: 'unisex'
+      }
+    },
+    minimo: {
+      summary: 'Solo requeridos',
+      value: {
+        title: 'Adidas Shoes',
+        sizes: ['38', '39'],
+        gender: 'men'
+      }
+    }
+  }
+})
+create(@Body() dto: CreateProductDto) {}
+```
+
+---
+
 ### @ApiParam()
-Documenta parámetros de ruta.
+
+**Propósito**: Documenta parámetros de ruta
 
 ```typescript
 @Get(':id')
@@ -193,167 +270,241 @@ Documenta parámetros de ruta.
   description: 'UUID del producto',
   example: '550e8400-e29b-41d4-a716-446655440000'
 })
-findOne(@Param('id') id: string) {
-  return this.productsService.findOne(id);
-}
+findOne(@Param('id') id: string) {}
 ```
 
+---
+
 ### @ApiQuery()
-Documenta parámetros de query.
+
+**Propósito**: Documenta parámetros de query
 
 ```typescript
 @Get()
 @ApiQuery({
   name: 'limit',
   required: false,
-  description: 'Número de resultados por página',
+  description: 'Número de resultados',
   example: 10
 })
 @ApiQuery({
   name: 'offset',
   required: false,
-  description: 'Número de resultados a saltar',
+  description: 'Resultados a saltar',
   example: 0
 })
-findAll(@Query() paginationDto: PaginationDto) {
-  return this.productsService.findAll(paginationDto);
-}
+findAll(@Query() dto: PaginationDto) {}
 ```
 
-## Diferencias entre @ApiBody y @ApiProperty
+---
 
-| Aspecto | @ApiProperty | @ApiBody |
-|---------|--------------|----------|
-| **Ubicación** | En DTOs (`.dto.ts`) | En controladores (`.controller.ts`) |
-| **Propósito** | Documenta schemas/estructura | Ejemplos para testing |
-| **Aparece en** | Sección "Schemas" | Dropdown de ejemplos en endpoints |
-| **Información** | Descripción, tipo, validaciones | Objetos completos de ejemplo |
-| **Cantidad** | Un ejemplo por campo | Múltiples ejemplos completos |
+## PartialType y DTOs
 
-## Configuración Avanzada
-
-### Agregar Autenticación Bearer (JWT)
-
-Para que Swagger muestre el icono del candado 🔒 y permita agregar tokens JWT:
-
-#### 1. Configurar en main.ts
+### El problema con `@nestjs/mapped-types`
 
 ```typescript
-// main.ts
-const config = new DocumentBuilder()
-  .setTitle('Teslo Shop API')
-  .setDescription('Teslo shop endpoints')
-  .setVersion('1.0')
-  .addBearerAuth() // ⬅️ Habilita autenticación Bearer
-  .build();
+import { PartialType } from '@nestjs/mapped-types';
 
-const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup('api/docs', app, document);
+export class UpdateProductDto extends PartialType(CreateProductDto) {}
 ```
 
-#### 2. Agregar @ApiBearerAuth() en las rutas protegidas
+❌ **Problema**: Swagger NO hereda los `@ApiProperty()` del DTO base
 
-Opción A: En cada endpoint individualmente
+### La solución: `@nestjs/swagger`
+
 ```typescript
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/swagger';
 
-@Get('profile')
-@UseGuards(AuthGuard())
-@ApiBearerAuth() // ⬅️ Marca esta ruta como protegida
-getProfile(@GetUser() user: User) {
-  return user;
-}
+export class UpdateProductDto extends PartialType(CreateProductDto) {}
 ```
 
-Opción B: En el decorador @Auth() (Recomendado)
+✅ **Resultado**: Hereda propiedades, validaciones Y documentación
+
+### Comparación
+
+| Aspecto | @nestjs/mapped-types | @nestjs/swagger |
+|---------|---------------------|-----------------|
+| Hereda propiedades | ✅ | ✅ |
+| Hereda validaciones | ✅ | ✅ |
+| Hereda `@ApiProperty()` | ❌ | ✅ |
+| Documenta en Swagger | ❌ | ✅ |
+| **Usar cuando** | Sin Swagger | Con Swagger ⭐ |
+
+### Otros helpers disponibles
+
 ```typescript
-// auth/decorators/auth.decorator.ts
-import { ApiBearerAuth } from '@nestjs/swagger';
+import {
+  PartialType,      // Todos opcionales
+  PickType,         // Selecciona campos
+  OmitType,         // Excluye campos
+  IntersectionType  // Combina DTOs
+} from '@nestjs/swagger';
 
-export function Auth(...roles: ValidRoles[]) {
-  return applyDecorators(
-    RoleProtected(...roles),
-    UseGuards(AuthGuard(), UserRoleGuard),
-    ApiBearerAuth(), // ⬅️ Incluido automáticamente
-  );
-}
+// Ejemplos
+class LoginDto extends PickType(CreateUserDto, ['email', 'password']) {}
+class UpdateUserDto extends OmitType(CreateUserDto, ['password']) {}
 ```
 
-Con esta configuración, todas las rutas con `@Auth()` mostrarán el candado.
+---
 
-#### 3. Usar en Swagger UI
+## Mejores Prácticas
 
-1. **Login**: Ejecuta `POST /api/auth/login` con credenciales válidas
-   ```json
-   {
-     "email": "admin@teslo.com",
-     "password": "Admin123"
-   }
-   ```
+### 1. Usar `type` en lugar de `example`
 
-2. **Copiar token**: De la respuesta, copia el valor del campo `token`
+#### ❌ Evitar
 
-3. **Autorizar**:
-   - Click en el botón **"Authorize"** (candado) arriba a la derecha
-   - Pega el token (solo el token, sin "Bearer")
-   - Click **"Authorize"**
-   - Click **"Close"**
-
-4. **Probar**: Ahora puedes ejecutar rutas protegidas. Swagger agregará automáticamente el header:
-   ```
-   Authorization: Bearer <tu-token>
-   ```
-
-#### Troubleshooting
-
-**Problema**: El candado no aparece o no se abre
-- ✅ Verifica que `.addBearerAuth()` esté en main.ts
-- ✅ Verifica que `@ApiBearerAuth()` esté en las rutas (o en @Auth)
-- ✅ Reinicia la aplicación
-
-**Problema**: Token no se envía en las peticiones
-- ✅ Verifica que hiciste click en "Authorize"
-- ✅ Verifica que el token no tenga espacios al inicio/final
-- ✅ No agregues "Bearer" manualmente, Swagger lo hace automáticamente
-
-### Ocultar Endpoints
 ```typescript
-@ApiExcludeEndpoint()
-@Get('internal')
-internalEndpoint() {
-  // No aparecerá en Swagger
-}
+@ApiResponse({
+  status: 200,
+  example: { // Manual, difícil de mantener
+    id: '550e8400...',
+    title: 'Product',
+    price: 29.99
+  }
+})
 ```
 
-### Agrupar Controladores
+#### ✅ Recomendado
+
+```typescript
+@ApiResponse({
+  status: 200,
+  type: Product, // Automático
+})
+```
+
+**Ventajas**:
+- Sincronizado con `@ApiProperty()` de la entidad
+- Se actualiza automáticamente
+- Una sola fuente de verdad
+
+### 2. Documentar DTOs Y Entidades
+
+- **DTOs**: Documenta la entrada con `@ApiProperty()`
+- **Entidades**: Documenta la salida con `@ApiProperty()`
+
+### 3. Evitar redundancia
+
+❌ **Malo**: `description: 'Número de resultados (por defecto: 10)'`
+✅ **Bueno**: `description: 'Número de resultados'` + `default: 10`
+
+Swagger muestra el default automáticamente.
+
+### 4. Usar `@ApiTags()` para organizar
+
+Agrupa endpoints lógicamente:
+
 ```typescript
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {}
 
-@ApiTags('Files')
-@Controller('files')
-export class FilesController {}
+@ApiTags('Auth')
+@Controller('auth')
+export class AuthController {}
 ```
 
-## Beneficios
+---
 
-1. **Documentación automática**: Se actualiza con tu código
-2. **Testing integrado**: Prueba endpoints sin Postman
-3. **Validación visual**: Ves campos requeridos y tipos
-4. **Colaboración**: Otros desarrolladores entienden la API
-5. **Generación de clientes**: Exporta definición OpenAPI
+## Autenticación JWT
 
-## Exportar Definición
+### 1. Configurar Bearer Auth
 
-Para generar archivo JSON de OpenAPI:
+```typescript
+// main.ts
+const config = new DocumentBuilder()
+  .setTitle('API')
+  .addBearerAuth() // ⬅️ Habilita JWT
+  .build();
+```
+
+### 2. Marcar rutas protegidas
+
+**Opción A**: Individual
+```typescript
+@Get('profile')
+@UseGuards(AuthGuard())
+@ApiBearerAuth()
+getProfile() {}
+```
+
+**Opción B**: Decorador compuesto (recomendado)
+```typescript
+// auth.decorator.ts
+export function Auth(...roles: ValidRoles[]) {
+  return applyDecorators(
+    RoleProtected(...roles),
+    UseGuards(AuthGuard(), UserRoleGuard),
+    ApiBearerAuth(), // ⬅️ Incluido
+  );
+}
+
+// Uso
+@Get('profile')
+@Auth(ValidRoles.USER)
+getProfile() {}
+```
+
+### 3. Usar en Swagger UI
+
+1. Login → Copiar token de la respuesta
+2. Click botón **"Authorize"** 🔒
+3. Pegar token (sin "Bearer")
+4. Click **"Authorize"** → **"Close"**
+5. Probar rutas protegidas
+
+---
+
+## Herramientas Adicionales
+
+### Ocultar endpoints
+
+```typescript
+@ApiExcludeEndpoint()
+@Get('internal')
+internalRoute() {} // No aparece en Swagger
+```
+
+### Exportar definición OpenAPI
 
 ```typescript
 const document = SwaggerModule.createDocument(app, config);
 
-// Guardar en archivo
-const fs = require('fs');
-fs.writeFileSync('./swagger.json', JSON.stringify(document));
+// Guardar JSON
+import { writeFileSync } from 'fs';
+writeFileSync('./openapi.json', JSON.stringify(document));
 ```
 
-Este archivo puede usarse para generar clientes automáticamente en otros lenguajes.
+Úsalo para:
+- Generar clientes en otros lenguajes
+- Compartir con equipos frontend
+- Validar contratos de API
+
+### Comparación Swagger UI vs Redoc
+
+| Característica | Swagger UI | Redoc |
+|---------------|------------|-------|
+| **Testing** | ✅ Interactivo | ❌ Solo lectura |
+| **Diseño** | Funcional | ✅ Más elegante |
+| **Velocidad** | Lento en APIs grandes | ✅ Más rápido |
+| **Navegación** | Básica | ✅ Búsqueda avanzada |
+| **Uso** | Testing y desarrollo | Documentación pública |
+
+**Recomendación**: Usa ambos
+- Swagger UI para desarrollo
+- Redoc para compartir con clientes
+
+---
+
+## Resumen de Decoradores
+
+| Decorador | Ubicación | Propósito |
+|-----------|-----------|-----------|
+| `@ApiTags()` | Controlador | Agrupar endpoints |
+| `@ApiProperty()` | DTO/Entidad | Documentar propiedades |
+| `@ApiResponse()` | Endpoint | Documentar respuestas |
+| `@ApiBody()` | Endpoint | Ejemplos de entrada |
+| `@ApiParam()` | Endpoint | Parámetros de ruta |
+| `@ApiQuery()` | Endpoint | Parámetros de query |
+| `@ApiBearerAuth()` | Endpoint | Marcar como protegido |
+| `@ApiExcludeEndpoint()` | Endpoint | Ocultar de docs |

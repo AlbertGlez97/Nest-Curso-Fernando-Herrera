@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Product } from '.';
+import { ApiProperty } from '@nestjs/swagger';
 
 // =========================================================================
 // ENTIDAD IMAGEN DE PRODUCTO - TABLA PARA ALMACENAR URLS DE IMÁGENES
@@ -22,6 +23,10 @@ export class ProductImage {
   // Diferente a Product que usa UUID, aquí usamos números: 1, 2, 3, 4...
   // Los números son más eficientes para tablas con muchos registros
   // y cuando no necesitas unicidad global
+  @ApiProperty({
+    example: 1,
+    description: 'Product image ID',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -33,6 +38,10 @@ export class ProductImage {
   // - "/uploads/productos/camiseta-nike-1.jpg"
   // - "https://cdn.tienda.com/images/producto123.png"
   // - "https://s3.amazonaws.com/bucket/imagen.webp"
+  @ApiProperty({
+    example: 'http://localhost:3000/api/files/product/1234.jpg',
+    description: 'Product image URL',
+  })
   @Column('text')
   url: string;
 
