@@ -8,6 +8,27 @@ import {
   MinLength,
 } from 'class-validator';
 
+// =========================================================================
+// DTO: LOGIN USER - VALIDACIÓN DE DATOS PARA INICIAR SESIÓN
+// =========================================================================
+// Este DTO (Data Transfer Object) define y valida los datos necesarios
+// para que un usuario inicie sesión en el sistema
+//
+// DIFERENCIAS CON CreateUserDto:
+// - CreateUserDto: Requiere email, password Y fullName (registro)
+// - LoginUserDto: Solo requiere email y password (login)
+//
+// PROCESO DE VALIDACIÓN:
+// 1. Cliente envía JSON: { email, password }
+// 2. ValidationPipe valida usando los decoradores de class-validator
+// 3. Si hay errores, retorna HTTP 400 con detalles
+// 4. Si pasa validación, el DTO llega al servicio
+//
+// SEGURIDAD:
+// - Validaciones previenen inyección de datos maliciosos
+// - Transformaciones normalizan datos (lowercase, trim)
+// - Mismas validaciones que en registro para consistencia
+
 export class LoginUserDto {
   // =======================================================================
   // EMAIL - CORREO ELECTRÓNICO DEL USUARIO
@@ -22,7 +43,7 @@ export class LoginUserDto {
   // VALIDACIÓN: Debe ser un email válido (formato: xxx@xxx.xxx)
   // Usa una expresión regular interna para validar formato de email
   @IsEmail()
-  // TRANSFORMACIÓN: Normaliza el email antes de guardarlo
+  // TRANSFORMACIÓN: Normaliza el email antes de buscarlo en BD
   // - toLowerCase(): Convierte a minúsculas para evitar duplicados
   //   "User@Example.COM" → "user@example.com"
   // - trim(): Elimina espacios en blanco al inicio y final

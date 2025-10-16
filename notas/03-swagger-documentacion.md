@@ -232,15 +232,89 @@ findAll(@Query() paginationDto: PaginationDto) {
 
 ## Configuración Avanzada
 
-### Agregar Autenticación
+### Agregar Autenticación Bearer (JWT)
+
+Para que Swagger muestre el icono del candado 🔒 y permita agregar tokens JWT:
+
+#### 1. Configurar en main.ts
+
 ```typescript
+// main.ts
 const config = new DocumentBuilder()
   .setTitle('Teslo Shop API')
   .setDescription('Teslo shop endpoints')
   .setVersion('1.0')
-  .addBearerAuth()
+  .addBearerAuth() // ⬅️ Habilita autenticación Bearer
   .build();
+
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup('api/docs', app, document);
 ```
+
+#### 2. Agregar @ApiBearerAuth() en las rutas protegidas
+
+Opción A: En cada endpoint individualmente
+```typescript
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@Get('profile')
+@UseGuards(AuthGuard())
+@ApiBearerAuth() // ⬅️ Marca esta ruta como protegida
+getProfile(@GetUser() user: User) {
+  return user;
+}
+```
+
+Opción B: En el decorador @Auth() (Recomendado)
+```typescript
+// auth/decorators/auth.decorator.ts
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+export function Auth(...roles: ValidRoles[]) {
+  return applyDecorators(
+    RoleProtected(...roles),
+    UseGuards(AuthGuard(), UserRoleGuard),
+    ApiBearerAuth(), // ⬅️ Incluido automáticamente
+  );
+}
+```
+
+Con esta configuración, todas las rutas con `@Auth()` mostrarán el candado.
+
+#### 3. Usar en Swagger UI
+
+1. **Login**: Ejecuta `POST /api/auth/login` con credenciales válidas
+   ```json
+   {
+     "email": "admin@teslo.com",
+     "password": "Admin123"
+   }
+   ```
+
+2. **Copiar token**: De la respuesta, copia el valor del campo `token`
+
+3. **Autorizar**:
+   - Click en el botón **"Authorize"** (candado) arriba a la derecha
+   - Pega el token (solo el token, sin "Bearer")
+   - Click **"Authorize"**
+   - Click **"Close"**
+
+4. **Probar**: Ahora puedes ejecutar rutas protegidas. Swagger agregará automáticamente el header:
+   ```
+   Authorization: Bearer <tu-token>
+   ```
+
+#### Troubleshooting
+
+**Problema**: El candado no aparece o no se abre
+- ✅ Verifica que `.addBearerAuth()` esté en main.ts
+- ✅ Verifica que `@ApiBearerAuth()` esté en las rutas (o en @Auth)
+- ✅ Reinicia la aplicación
+
+**Problema**: Token no se envía en las peticiones
+- ✅ Verifica que hiciste click en "Authorize"
+- ✅ Verifica que el token no tenga espacios al inicio/final
+- ✅ No agregues "Bearer" manualmente, Swagger lo hace automáticamente
 
 ### Ocultar Endpoints
 ```typescript

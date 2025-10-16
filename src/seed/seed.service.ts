@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ProductsService } from 'src/products/products.service';
 import { initialData } from './data/seed-data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/auth/entities/user.entity';
+import * as bcrypt from 'bcrypt';
+import { Admin, Repository } from 'typeorm';
 
 // =========================================================================
 // SERVICIO SEED - DEMOSTRACIÓN DE CÓMO USAR SERVICIOS DE OTROS MÓDULOS
 // =========================================================================
 @Injectable()
 export class SeedService {
-
   // =========================================================================
   // INYECCIÓN DE DEPENDENCIAS DE OTRO MÓDULO
   // =========================================================================
@@ -31,22 +34,52 @@ export class SeedService {
     //    - Lo inyecta en este constructor
     //    - Permite usar todos sus métodos públicos
     private readonly productsService: ProductsService,
-  ){}
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   // =========================================================================
   // MÉTODO PRINCIPAL DEL SEED
   // =========================================================================
-  async runSeed(){
-    // Llamamos al método privado que maneja la lógica de inserción
-    await this.insertNewProducts();
+  async runSeed() {
+    // PASO 1: BORRAR TABLAS
+    await this.deleteTables();
 
-    return 'SEED EXECUTED'
+    // PASO 2: INSERTAR USUARIOS
+    const adminUser = await this.insertUsers();
+
+    // PASO 3: INSERTAR NUEVOS PRODUCTOS
+    // Llamamos al método privado que maneja la lógica de inserción
+    await this.insertNewProducts(adminUser[0]);
+
+    return 'SEED EXECUTED';
+  }
+
+  private async deleteTables() {
+    await this.productsService.deleteAllProducts();
+
+    const queryBuilder = this.userRepository.createQueryBuilder();
+    await queryBuilder.delete().where({}).execute();
+  }
+
+  private async insertUsers() {
+    const seedUser = initialData.users;
+
+    const users: User[] = [];
+    seedUser.forEach((user) => {
+      user.password = bcrypt.hashSync(user.password, 10);
+      users.push(this.userRepository.create(user));
+    });
+
+    const dbUsers = await this.userRepository.save(users);
+    return dbUsers;
   }
 
   // =========================================================================
   // USO DE MÉTODO EXPORTADO DE OTRO MÓDULO - INSERCIÓN MASIVA DE PRODUCTOS
   // =========================================================================
-  private async insertNewProducts() {
+  private async insertNewProducts(user: User) {
     // PASO 1: LIMPIAR BASE DE DATOS
     // Ejemplo de cómo usar un método de otro servicio:
     // 1. El método deleteAllProducts() está definido en ProductsService
@@ -79,8 +112,8 @@ export class SeedService {
     // CREAR ARRAY DE PROMESAS:
     // Por cada producto, creamos una promesa que llama al método create()
     // pero NO la ejecutamos todavía (no hay await aquí)
-    products.forEach( product => {
-      insertPromises.push(this.productsService.create(product));
+    products.forEach((product) => {
+      insertPromises.push(this.productsService.create(product, user));
     });
 
     // EJECUTAR TODAS LAS PROMESAS EN PARALELO:

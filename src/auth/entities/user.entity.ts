@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Product } from 'src/products/entities';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 // =========================================================================
 // ENTIDAD USER - REPRESENTACIÓN DE USUARIOS EN LA BASE DE DATOS
@@ -140,4 +141,7 @@ export class User {
     default: ['user'], // Por defecto, nuevos usuarios tienen rol 'user'
   })
   roles: string[];
+
+  @OneToMany(() => Product, (product) => product.user)
+  product: Product;
 }

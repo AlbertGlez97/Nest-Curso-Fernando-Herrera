@@ -3,19 +3,20 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ProductImage } from './';
+import { User } from 'src/auth/entities/user.entity';
 
 // =========================================================================
 // ENTIDAD PRODUCTO - DEFINICIÓN DE TABLA Y RELACIONES
 // =========================================================================
 // @Entity() le dice a TypeORM que esta clase representa una tabla en la BD
 // Por defecto, el nombre de la tabla será 'product' (nombre de la clase en minúsculas)
-@Entity({name: 'products'})
+@Entity({ name: 'products' })
 export class Product {
-
   // =========================================================================
   // CLAVE PRIMARIA
   // =========================================================================
@@ -128,10 +129,13 @@ export class Product {
   // ¿Por qué images?: El signo ? indica que es opcional
   // Un producto puede existir sin imágenes durante la creación
   @OneToMany(() => ProductImage, (productImage) => productImage.product, {
-    cascade: true,    // Guardar/eliminar imágenes automáticamente con el producto
-    eager: true,      // Cargar imágenes automáticamente en cada consulta
+    cascade: true, // Guardar/eliminar imágenes automáticamente con el producto
+    eager: true, // Cargar imágenes automáticamente en cada consulta
   })
   images?: ProductImage[];
+
+  @ManyToOne(() => User, (user) => user.product, { eager: true })
+  user: User;
 
   // =========================================================================
   // HOOKS DE CICLO DE VIDA - PROCESAMIENTO AUTOMÁTICO DE DATOS
@@ -148,9 +152,9 @@ export class Product {
     // NORMALIZACIÓN DEL SLUG:
     // Convertir a formato amigable para URLs
     this.slug = this.slug
-      .toLocaleLowerCase()    // "CAMISETA" -> "camiseta"
-      .replaceAll(' ', '_')   // "camiseta nike" -> "camiseta_nike"
-      .replaceAll("'", '');   // "men's shirt" -> "mens shirt"
+      .toLocaleLowerCase() // "CAMISETA" -> "camiseta"
+      .replaceAll(' ', '_') // "camiseta nike" -> "camiseta_nike"
+      .replaceAll("'", ''); // "men's shirt" -> "mens shirt"
   }
 
   // @BeforeUpdate se ejecuta ANTES de actualizar un registro existente

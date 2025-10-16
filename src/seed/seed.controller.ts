@@ -54,7 +54,7 @@ export class SeedController {
     status: 500,
     description: 'Error interno del servidor durante la ejecución del seed',
   })
-  @Auth(ValidRoles.ADMIN, ValidRoles.SUPER_USER)
+  // @Auth(ValidRoles.ADMIN, ValidRoles.SUPER_USER)
   executeSeed() {
     return this.seedService.runSeed();
   }

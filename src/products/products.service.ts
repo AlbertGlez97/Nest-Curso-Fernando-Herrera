@@ -9,6 +9,7 @@ import { validate as isUUID } from 'uuid';
 import { Product, ProductImage } from './entities';
 import { DataSource } from 'typeorm';
 import { handleDBExceptions } from 'src/common/helpers/handleDBExceptions.helper';
+import { User } from 'src/auth/entities/user.entity';
 
 // =========================================================================
 // SERVICIO DE PRODUCTOS - LÓGICA DE NEGOCIO
@@ -38,7 +39,7 @@ export class ProductsService {
   // =========================================================================
   // CREAR NUEVO PRODUCTO
   // =========================================================================
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, user: User) {
     try {
       // DESESTRUCTURACIÓN del DTO:
       // - images: array de URLs de imágenes (si no se proporciona, defaultea a [])
@@ -56,6 +57,7 @@ export class ProductsService {
         images: images.map((image) =>
           this.productImageRepository.create({ url: image }),
         ),
+        user, // Asociar el producto al usuario que lo creó
       });
 
       // GUARDAR EN BASE DE DATOS:
@@ -196,7 +198,7 @@ export class ProductsService {
   // =========================================================================
   // ACTUALIZAR PRODUCTO EXISTENTE
   // =========================================================================
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, user: User) {
     // SEPARAR IMÁGENES DEL RESTO DE DATOS:
     // images: array de nuevas URLs (si se proporciona)
     // toUpdate: resto de propiedades a actualizar (title, price, etc.)
@@ -280,6 +282,8 @@ export class ProductsService {
           this.productImageRepository.create({ url: image }),
         );
       }
+
+      product.user = user; // Actualizar el usuario que modificó el producto
 
       // PASO 3: Guardar el producto con sus nuevas imágenes
       // Como product.images está poblado arriba y tenemos cascade: true,
